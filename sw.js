@@ -1,5 +1,5 @@
 // 오프라인 캐시. 배포할 때마다 CACHE_VERSION을 올린다.
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `table-quiz-${CACHE_VERSION}`;
 
 // 앱 파일. 새 파일(js 모듈, vendor/tesseract 등)을 만들면 여기에 추가한다.
@@ -10,6 +10,12 @@ const APP_FILES = [
   './css/style.css',
   './js/app.js',
   './js/db.js',
+  './js/ui.js',
+  './js/import.js',
+  './js/grid-detect.js',
+  './js/grid-editor.js',
+  './js/cropper.js',
+  './js/settings.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
