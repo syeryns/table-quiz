@@ -45,7 +45,12 @@ export function blobURL(blob) {
   screenUrls.push(url);
   return url;
 }
-export function releaseScreenUrls() {
-  for (const u of screenUrls) URL.revokeObjectURL(u);
+// 지금까지 만든 URL 목록을 넘기고 새 목록을 시작한다
+export function takeScreenUrls() {
+  const list = screenUrls;
   screenUrls = [];
+  return list;
+}
+export function revokeUrls(list) {
+  for (const u of list) URL.revokeObjectURL(u);
 }

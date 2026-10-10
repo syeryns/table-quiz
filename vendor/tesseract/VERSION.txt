@@ -1,0 +1,2 @@
+tesseract.js 7.0.0, tesseract.js-core 7.0.0 (Apache-2.0)
+lang/*.traineddata.gz: tessdata 4.0.0_best_int via @tesseract.js-data/eng, kor 1.0.0 (Apache-2.0)

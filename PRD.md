@@ -48,7 +48,8 @@ IndexedDB 저장소(object store) 구성:
   repCol: 0,                 // 대표 열 (어느 열이든 가능)
   quizCols: [1, 2, 3],       // 출제 열
   colModes: { 3: 'text' },   // 열별 읽기 방식. 없으면 'image'
-  splitChars: [',', '\n'],   // 글자 열 쪼개기 기준
+  colNames: { 1: '기시' },   // 헤더 행이 없을 때 쓰는 열 이름
+  splitChars: [',', '+', '\n'], // 글자 열 쪼개기 기준. '/', ';', '·'는 선택
   excludedRows: [7, 8],
   sameGroups: [[cellIdA, cellIdB], ...], // 사진 열용 수동 묶음
   quizSettings: { mode, optionCount, trayLayout, order, recallGate } } // order: 'table' | 'random' | 'weak-first', recallGate: 'off' | 'tap' | 'delay3s'
@@ -56,7 +57,9 @@ IndexedDB 저장소(object store) 구성:
 // cells
 { id, tableId, row, col, rowSpan, imageId,
   text: 'C5, C6',            // 글자 열만. 사용자가 확인·수정한 값
-  parts: ['C5', 'C6'] }      // 쪼갠 조각. 카드 한 장씩
+  parts: ['C5', 'C6'],       // 쪼갠 조각. 카드 한 장씩
+  ocrConf: 62,               // 인식 신뢰도(0~100). 낮으면 확인 목록 위로
+  checked: true }            // 사용자가 확인·수정함
 
 // images
 { id, blob }                 // 원본 사진과 칸 이미지
@@ -112,13 +115,13 @@ IndexedDB 저장소(object store) 구성:
 | 방식 | 카드 | 쪼개기 | 같은 값 묶기 |
 | --- | --- | --- | --- |
 | 사진 (기본) | 칸 이미지 한 장 | 안 함 | 수동 |
-| 글자 | 조각마다 텍스트 카드 한 장 | 쉼표·줄바꿈 기준 자동 | 같은 글자끼리 자동 |
+| 글자 | 조각마다 텍스트 카드 한 장 | 쉼표·더하기·줄바꿈 기준 자동 | 같은 글자끼리 자동 |
 
 글자로 바꾸면 다음 순서로 진행한다.
 
-1. **인식:** 그 열의 칸 이미지만 Tesseract.js로 읽음. 인식 언어는 영어·숫자 전용
+1. **인식:** 그 열의 칸 이미지만 Tesseract.js로 읽음. 인식 언어는 한국어+영어(숫자 포함)
 2. **확인:** 칸 이미지와 인식 글자를 나란히 보여주는 목록에서 틀린 글자를 고침. 인식 신뢰도가 낮은 칸은 노란 표시로 먼저 보이게 정렬
-3. **쪼개기:** 쉼표와 줄바꿈 기준으로 조각을 나눠 미리보기. 조각마다 앞뒤 공백을 지우고 대소문자를 맞춰 비교용 값으로 저장
+3. **쪼개기:** 쉼표(`,`)·더하기(`+`)·줄바꿈 기준으로 조각을 나눠 미리보기. `/`, `;`, `·`는 표 설정에서 켜고 끔. 칸 전체나 조각을 감싼 괄호(`()`, `[]`)는 지움. 예: `(추1,추2)` → `추1`·`추2`, `추1+추2` → `추1`·`추2`. 중간 괄호는 남김: `C5, C6 (C7)` → `C5`·`C6 (C7)`. 조각마다 앞뒤 공백을 지우고 대소문자를 맞춰 비교용 값으로 저장
 4. **되돌리기:** 언제든 사진으로 되돌릴 수 있고 고친 글자는 남겨둠
 
 ## 기능 3 퀴즈 세션
@@ -227,7 +230,7 @@ flowchart LR
 
 ## 기술 스택, 저장, 배포
 
-순수 HTML/CSS/JS에 빌드 도구 없이 ES 모듈을 그대로 쓴다. 외부 라이브러리는 글자 인식용 Tesseract.js와 영어 인식 데이터(eng.traineddata)만 쓴다. CDN에서 불러오지 않고 저장소 안에 넣어서 오프라인에서도 동작하게 한다.
+순수 HTML/CSS/JS에 빌드 도구 없이 ES 모듈을 그대로 쓴다. 외부 라이브러리는 글자 인식용 Tesseract.js와 한국어·영어 인식 데이터(kor·eng traineddata)만 쓴다. CDN에서 불러오지 않고 저장소 안에 넣어서 오프라인에서도 동작하게 한다.
 
 ```
 table-quiz/
@@ -236,7 +239,7 @@ table-quiz/
 ├── sw.js              # 오프라인 캐시, CACHE_VERSION 상수. vendor/도 캐시
 ├── css/style.css
 ├── icons/             # 180·192·512px 앱 아이콘
-├── vendor/tesseract/  # tesseract.min.js, worker, wasm core, eng.traineddata
+├── vendor/tesseract/  # tesseract.esm.min.js, worker, wasm core, lang/kor·eng traineddata
 └── js/
     ├── app.js         # 화면 전환(해시 라우팅)
     ├── db.js          # IndexedDB 래퍼
@@ -255,7 +258,7 @@ table-quiz/
 - **배포:** GitHub Pages 무료 사용은 공개(public) 저장소가 조건. `main` 브랜치 루트를 Pages로 지정
 - **캐시 갱신:** 배포할 때마다 `sw.js`의 `CACHE_VERSION`을 올려서 iPad가 새 버전을 받게 함
 
-글자 인식은 OCR 엔진을 처음 불러올 때 1\~2초가 걸린다. 표 설정에서 글자 열을 처음 고를 때만 불러오고 퀴즈 중에는 쓰지 않는다.
+글자 인식은 OCR 엔진을 처음 불러올 때 수 초가 걸린다(한국어 데이터 포함). 인식 파일은 처음 쓸 때 받아 캐시하고 이후엔 오프라인에서도 쓴다. 표 설정에서 글자 열을 처음 고를 때만 불러오고 퀴즈 중에는 쓰지 않는다.
 
 ## 개발 단계
 
@@ -279,7 +282,6 @@ table-quiz/
 
 1차 버전에서는 아래를 만들지 않는다.
 
-- 한국어 글자 인식. 1차 글자 모드는 영어·숫자 전용
 - 사진 열의 값 쪼개기. 사진 열은 칸 하나 = 카드 한 장이고 쪼개야 하면 글자 열로 바꿈
 - 사진 원근 보정(비스듬히 찍은 사진 펴기)
 - 같은 값 자동 제안(칸 이미지 유사도 비교)

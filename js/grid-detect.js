@@ -112,21 +112,23 @@ function withEdges(an, axis, positions) {
   return out;
 }
 
-// axis 방향 a~b 띠에 글자가 있는지. 잡음 점은 짧아서 빠지고,
-// 종이 가장자리·그림자처럼 길게 이어진 줄은 글자가 아니므로 뺀다.
+// axis 방향 a~b 띠에 글자가 있는지.
+// 2×2가 모두 어두운 덩어리만 센다: 글자 획은 덩어리가 지고 잡음 점은 흩어져 있다.
+// 종이 가장자리·그림자처럼 띠를 가로지르는 긴 줄은 글자가 아니므로 뺀다.
 function hasContent(an, axis, a, b) {
   const { w, h, bin } = an;
   if (b - a < 6) return false;
+  const solid = (x, y) => x + 1 < w && y + 1 < h &&
+    bin[y * w + x] & bin[y * w + x + 1] & bin[(y + 1) * w + x] & bin[(y + 1) * w + x + 1];
   const len = axis === 'y' ? w : h;
   let n = 0;
   for (let i = a; i <= b; i++) {
-    const c = axis === 'y'
-      ? coverage((x) => bin[i * w + x], w, 6)
-      : coverage((y) => bin[y * w + i], h, 6);
-    if (c < len * 0.3) n += c;
+    let line = 0;
+    for (let k = 0; k < len; k++) line += axis === 'y' ? solid(k, i) : solid(i, k);
+    if (line < len * 0.3) n += line;
   }
-  // 띠 두께와 상관없이, 한 줄 길이의 절반만큼 글자 픽셀이 있으면 내용이 있다고 본다
-  return n > len * 0.5;
+  // 글자가 있는 띠는 덩어리 밀도가 1% 넘고, 잡음뿐인 여백은 0.3% 안팎
+  return n / ((b - a + 1) * len) > 0.006;
 }
 
 export function edgeGrid(an) {
@@ -134,9 +136,28 @@ export function edgeGrid(an) {
 }
 
 // 격자 감지. found가 false면 선을 거의 못 찾은 것이므로 수동 모드로 간다.
+// 어두운 내용이 있는 영역의 폭·높이. 표를 바짝 자르지 않아도 선 길이를 표 크기에 견준다.
+function contentSpan(an) {
+  const { w, h, bin } = an;
+  let x0 = w, x1 = -1, y0 = h, y1 = -1;
+  for (let y = 0; y < h; y++) {
+    if (!coverage((x) => bin[y * w + x], w, 4)) continue;
+    if (y < y0) y0 = y;
+    y1 = y;
+  }
+  for (let x = 0; x < w; x++) {
+    if (!coverage((y) => bin[y * w + x], h, 4)) continue;
+    if (x < x0) x0 = x;
+    x1 = x;
+  }
+  if (x1 < 0 || y1 < 0) return { w, h };
+  return { w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
 export function detectGrid(an) {
-  const hLines = findLines(profile(an, 'y'), an.w);
-  const vLines = findLines(profile(an, 'x'), an.h);
+  const span = contentSpan(an);
+  const hLines = findLines(profile(an, 'y'), span.w);
+  const vLines = findLines(profile(an, 'x'), span.h);
   const found = hLines.length >= 2 && vLines.length >= 1;
   const all = [...hLines, ...vLines].map((l) => l.thickness).sort((a, b) => a - b);
   const thickness = all.length ? all[Math.floor(all.length / 2)] : 2;

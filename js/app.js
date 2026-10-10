@@ -1,7 +1,7 @@
 // 화면 전환(해시 라우팅)과 홈 화면
 
 import * as db from './db.js';
-import { h, toast, go, formatDate, releaseScreenUrls } from './ui.js';
+import { h, toast, go, formatDate, takeScreenUrls, revokeUrls } from './ui.js';
 import { importScreen } from './import.js';
 import { settingsScreen } from './settings.js';
 
@@ -63,14 +63,7 @@ async function homeScreen() {
   const tables = await db.listTables();
 
   const list = tables.length
-    ? h('ul', { class: 'table-list' },
-        tables.map((t) =>
-          h('li', {},
-            h('button', { class: 'table-item', onclick: () => go(`#/table/${t.id}/settings`) },
-              h('span', { class: 'table-name' }, t.name),
-              h('span', { class: 'table-date' }, formatDate(t.createdAt)))
-          )
-        ))
+    ? h('ul', { class: 'table-list' }, tables.map(tableItem))
     : h('div', { class: 'empty' },
         h('p', {}, '아직 표가 없어요'),
         h('p', { class: 'muted' }, '표 사진을 넣어 시작하세요'));
@@ -83,6 +76,55 @@ async function homeScreen() {
     h('footer', { class: 'backup' },
       h('button', { class: 'btn', onclick: exportBackup }, '전체 내보내기'),
       h('button', { class: 'btn', onclick: pickBackupFile }, '가져오기')));
+}
+
+// 표 하나: 누르면 설정, ⋯ 누르면 이름 바꾸기·복제·삭제
+function tableItem(t) {
+  const actions = h('div', { class: 'table-actions', hidden: true },
+    h('button', { class: 'btn', onclick: () => renameTable(t) }, '이름 바꾸기'),
+    h('button', { class: 'btn', onclick: () => duplicate(t) }, '복제'),
+    h('button', { class: 'btn danger', onclick: () => removeTable(t) }, '삭제'));
+  const more = h('button', {
+    class: 'btn more', 'aria-label': `${t.name} 관리`, 'aria-expanded': 'false',
+    onclick: () => {
+      actions.hidden = !actions.hidden;
+      more.setAttribute('aria-expanded', String(!actions.hidden));
+    },
+  }, '⋯');
+  return h('li', { class: 'table-row' },
+    h('div', { class: 'table-line' },
+      h('button', { class: 'table-item', onclick: () => go(`#/table/${t.id}/settings`) },
+        h('span', { class: 'table-name' }, t.name),
+        h('span', { class: 'table-date' }, formatDate(t.createdAt))),
+      more),
+    actions);
+}
+
+async function renameTable(t) {
+  const name = prompt('새 이름', t.name)?.trim();
+  if (!name || name === t.name) return;
+  const table = await db.get('tables', t.id);
+  table.name = name;
+  await db.put('tables', table);
+  render();
+}
+
+async function duplicate(t) {
+  try {
+    await db.duplicateTable(t.id, `${t.name} 복사본`);
+    toast('복제했어요');
+    render();
+  } catch (e) {
+    console.error(e);
+    toast('복제하지 못했어요');
+  }
+}
+
+async function removeTable(t) {
+  if (!confirm(`"${t.name}" 표를 삭제할까요? 되돌릴 수 없어요.`)) return;
+  await db.deleteTable(t.id);
+  toast('삭제했어요');
+  render();
 }
 
 // 아직 만들지 않은 화면
@@ -113,11 +155,13 @@ async function render() {
   if (!route) { go('#/'); return; }
   const params = path.match(route.pattern).slice(1);
   const seq = ++renderSeq;
+  const oldUrls = takeScreenUrls();
   try {
     const view = await route.screen(...params);
     if (seq !== renderSeq) return; // 그 사이 다른 화면으로 이동함
-    releaseScreenUrls();
     app.replaceChildren(view);
+    document.body.classList.remove('sheet-open');
+    revokeUrls(oldUrls); // 이전 화면의 이미지 URL만 해제
     window.scrollTo(0, 0);
   } catch (e) {
     console.error(e);

@@ -127,6 +127,40 @@ export async function deleteTable(tableId) {
   });
 }
 
+// 표를 칸·이미지까지 통째로 복사한다. 세션과 누적 기록은 새로 시작.
+export async function duplicateTable(tableId, name) {
+  const table = await get('tables', tableId);
+  if (!table) throw new Error('표를 찾지 못했어요');
+  const cells = await getAllByIndex('cells', 'tableId', tableId);
+  const newTableId = newId();
+  const imageMap = new Map();
+  const mapImage = (id) => {
+    if (!id) return id;
+    if (!imageMap.has(id)) imageMap.set(id, newId());
+    return imageMap.get(id);
+  };
+  const cellMap = new Map(cells.map((c) => [c.id, newId()]));
+  const newCells = cells.map((c) => ({ ...c, id: cellMap.get(c.id), tableId: newTableId, imageId: mapImage(c.imageId) }));
+  const newTable = {
+    ...structuredClone(table),
+    id: newTableId,
+    name,
+    createdAt: Date.now(),
+    sourceImageId: mapImage(table.sourceImageId),
+    sameGroups: (table.sameGroups || []).map((g) => g.map((id) => cellMap.get(id)).filter(Boolean)),
+  };
+  const images = await Promise.all([...imageMap].map(async ([oldId, id]) => {
+    const img = await get('images', oldId);
+    return img && { id, blob: img.blob };
+  }));
+  await transaction(['tables', 'cells', 'images'], 'readwrite', (s) => {
+    for (const img of images) if (img) s.images.put(img);
+    for (const c of newCells) s.cells.put(c);
+    s.tables.put(newTable);
+  });
+  return newTableId;
+}
+
 // ---- 백업 ----
 
 function blobToDataURL(blob) {

@@ -1,8 +1,11 @@
 // 오프라인 캐시. 배포할 때마다 CACHE_VERSION을 올린다.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `table-quiz-${CACHE_VERSION}`;
+// 글자 인식 파일(수 MB)은 처음 쓸 때 받아 따로 둔다. 앱 버전이 바뀌어도 다시 받지 않음.
+// vendor/tesseract를 바꿀 때만 이 이름을 올린다.
+const VENDOR_CACHE = 'table-quiz-vendor-1';
 
-// 앱 파일. 새 파일(js 모듈, vendor/tesseract 등)을 만들면 여기에 추가한다.
+// 앱 파일. 새 js 모듈을 만들면 여기에 추가한다.
 const APP_FILES = [
   './',
   './index.html',
@@ -16,6 +19,7 @@ const APP_FILES = [
   './js/grid-editor.js',
   './js/cropper.js',
   './js/settings.js',
+  './js/ocr.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -33,7 +37,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((k) => k.startsWith('table-quiz-') && k !== CACHE_NAME).map((k) => caches.delete(k))
+        keys.filter((k) => k.startsWith('table-quiz-') && k !== CACHE_NAME && k !== VENDOR_CACHE).map((k) => caches.delete(k))
       ))
       .then(() => self.clients.claim())
   );
@@ -54,13 +58,14 @@ self.addEventListener('fetch', (event) => {
   }
 
   // 캐시 우선. 목록에 없던 파일은 받아온 뒤 캐시에 넣어둔다.
+  const target = url.pathname.includes('/vendor/') ? VENDOR_CACHE : CACHE_NAME;
   event.respondWith(
     caches.match(req).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
         if (res.ok && res.type === 'basic') {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          caches.open(target).then((cache) => cache.put(req, copy));
         }
         return res;
       });
