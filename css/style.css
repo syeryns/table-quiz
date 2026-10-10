@@ -789,3 +789,328 @@ body.sheet-open { overflow: hidden; }
   align-items: center;
   gap: 10px;
 }
+
+/* ---- 세션 설정·결과 ---- */
+
+.session-form { display: grid; gap: 14px; }
+
+.option-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.option-row.disabled { opacity: 0.45; }
+
+.option-label { font-weight: 600; }
+
+@media (max-width: 600px) {
+  .option-row { grid-template-columns: 1fr; gap: 6px; }
+}
+
+.session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+}
+
+.stat { display: grid; gap: 2px; }
+.stat-value { font-size: 32px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat-label { color: var(--muted); font-size: 14px; }
+
+.wrong-list, .col-wrong {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.wrong-list li, .col-wrong li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.wrong-list img {
+  display: block;
+  max-height: 48px;
+  max-width: 70%;
+  padding: 4px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.wrong-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--wrong);
+}
+
+.col-tag-text { font-weight: 600; }
+
+/* ---- 퀴즈 ---- */
+
+.quiz-progress {
+  color: var(--muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.quiz-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 var(--gutter) 12px;
+}
+
+@media (orientation: portrait) {
+  .quiz-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.quiz-main, .tray-wrap {
+  position: relative;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.quiz-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+}
+
+.rep-card {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.rep-card img {
+  display: block;
+  max-width: 100%;
+  max-height: 26vh;
+  height: auto;
+  object-fit: contain;
+}
+
+.slot-groups { display: grid; gap: 12px; }
+
+.slot-group {
+  display: grid;
+  gap: 6px;
+}
+
+.slot-label { display: flex; align-items: center; min-height: 26px; }
+
+.slots, .reveal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  touch-action: none;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.slot.over {
+  border-style: solid;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface-2));
+}
+
+.slot.locked { border-style: solid; opacity: 0.75; }
+.slot.ok { border-style: solid; border-color: var(--correct); }
+.slot.bad { border-style: solid; border-color: var(--wrong); }
+
+.mark {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.mark.ok { background: var(--correct); }
+.mark.bad { background: var(--wrong); }
+
+.reveal {
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--correct) 14%, transparent);
+}
+
+.reveal-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--correct);
+}
+
+/* 슬롯이 길어 스크롤돼도 확인·다음 버튼은 늘 보이게 */
+.quiz-actions {
+  position: sticky;
+  bottom: -14px;
+  display: flex;
+  justify-content: flex-end;
+  margin: auto -14px -14px;
+  padding: 10px 14px 14px;
+  background: var(--surface);
+}
+
+.quiz-actions:empty { display: none; }
+
+.btn.wide { min-width: 140px; min-height: 52px; font-size: 18px; }
+
+/* 카드: 한 열은 같은 크기 틀. 그림은 비율을 지키며 가운데 */
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  border: 1px solid #c9c6bf;
+  border-radius: 10px;
+  background: #fff;
+  color: #1d1e20;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  cursor: grab;
+}
+
+.card img {
+  display: block;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+}
+
+.card.text span {
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card.picked {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+.card.dragging { opacity: 0.3; }
+
+.card[data-locked] { cursor: default; box-shadow: none; }
+
+.card.ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  opacity: 0.95;
+}
+
+.card.answer { border-color: var(--correct); }
+
+.tray-wrap { padding: 12px; }
+
+.tray { display: grid; gap: 12px; }
+
+.tray-cards, .tray-mixed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tray-row + .tray-row {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.recall-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.recall-title { font-size: 22px; font-weight: 700; }
+
+.card-preview {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.card-preview img, .card-preview span {
+  max-width: 92vw;
+  max-height: 80vh;
+  padding: 16px;
+  border-radius: 14px;
+  background: #fff;
+  color: #1d1e20;
+}
+
+.card-preview img { height: auto; object-fit: contain; }
+.card-preview span { font-size: 44px; font-weight: 700; }
+
+.reveal { scroll-margin-bottom: 90px; }

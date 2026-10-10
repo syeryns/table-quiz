@@ -1,5 +1,5 @@
 // 오프라인 캐시. 배포할 때마다 CACHE_VERSION을 올린다.
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_NAME = `table-quiz-${CACHE_VERSION}`;
 // 글자 인식 파일(수 MB)은 처음 쓸 때 받아 따로 둔다. 앱 버전이 바뀌어도 다시 받지 않음.
 // vendor/tesseract를 바꿀 때만 이 이름을 올린다.
@@ -20,6 +20,10 @@ const APP_FILES = [
   './js/cropper.js',
   './js/settings.js',
   './js/ocr.js',
+  './js/quiz.js',
+  './js/dnd.js',
+  './js/quiz-screen.js',
+  './js/session.js',
   './icons/icon-180.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

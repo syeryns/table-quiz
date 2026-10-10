@@ -4,6 +4,8 @@ import * as db from './db.js';
 import { h, toast, go, formatDate, takeScreenUrls, revokeUrls } from './ui.js';
 import { importScreen } from './import.js';
 import { settingsScreen } from './settings.js';
+import { sessionScreen, resultScreen } from './session.js';
+import { quizScreen } from './quiz-screen.js';
 
 const app = document.getElementById('app');
 
@@ -61,9 +63,10 @@ function pickBackupFile() {
 
 async function homeScreen() {
   const tables = await db.listTables();
+  const sessions = new Map((await db.getAll('sessions')).filter((s) => !s.done).map((s) => [s.tableId, s]));
 
   const list = tables.length
-    ? h('ul', { class: 'table-list' }, tables.map(tableItem))
+    ? h('ul', { class: 'table-list' }, tables.map((t) => tableItem(t, sessions.get(t.id))))
     : h('div', { class: 'empty' },
         h('p', {}, '아직 표가 없어요'),
         h('p', { class: 'muted' }, '표 사진을 넣어 시작하세요'));
@@ -79,7 +82,7 @@ async function homeScreen() {
 }
 
 // 표 하나: 누르면 설정, ⋯ 누르면 이름 바꾸기·복제·삭제
-function tableItem(t) {
+function tableItem(t, session) {
   const actions = h('div', { class: 'table-actions', hidden: true },
     h('button', { class: 'btn', onclick: () => renameTable(t) }, '이름 바꾸기'),
     h('button', { class: 'btn', onclick: () => duplicate(t) }, '복제'),
@@ -96,6 +99,7 @@ function tableItem(t) {
       h('button', { class: 'table-item', onclick: () => go(`#/table/${t.id}/settings`) },
         h('span', { class: 'table-name' }, t.name),
         h('span', { class: 'table-date' }, formatDate(t.createdAt))),
+      session ? h('button', { class: 'btn primary', onclick: () => go(`#/table/${t.id}/quiz`) }, '이어하기') : null,
       more),
     actions);
 }
@@ -127,25 +131,14 @@ async function removeTable(t) {
   render();
 }
 
-// 아직 만들지 않은 화면
-function placeholder(title) {
-  return h('section', { class: 'screen' },
-    h('header', { class: 'bar' },
-      h('button', { class: 'btn', onclick: () => go('#/') }, '홈'),
-      h('h1', {}, title),
-      h('span', { class: 'bar-spacer' })),
-    h('main', { class: 'content' },
-      h('div', { class: 'empty' }, h('p', { class: 'muted' }, '준비 중'))));
-}
-
 // 홈 / 가져오기 / 표 설정 / 세션 설정 / 퀴즈 / 결과
 const routes = [
   { pattern: /^\/?$/, screen: homeScreen },
   { pattern: /^\/import$/, screen: importScreen },
   { pattern: /^\/table\/([^/]+)\/settings$/, screen: settingsScreen },
-  { pattern: /^\/table\/([^/]+)\/session$/, screen: () => placeholder('세션 설정') },
-  { pattern: /^\/table\/([^/]+)\/quiz$/, screen: () => placeholder('퀴즈') },
-  { pattern: /^\/table\/([^/]+)\/result$/, screen: () => placeholder('결과') },
+  { pattern: /^\/table\/([^/]+)\/session$/, screen: sessionScreen },
+  { pattern: /^\/table\/([^/]+)\/quiz$/, screen: quizScreen },
+  { pattern: /^\/table\/([^/]+)\/result$/, screen: resultScreen },
 ];
 
 let renderSeq = 0;
